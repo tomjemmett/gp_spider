@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>GP Spider</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+        let map = L.map('map').setView([51.9873136, -1.7134329], 8);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 14,
+            attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        let gpLayer;
+        let nearestLayer;
+        let routeLayer;
+        let initLoad = true;
+
+        let gpPractices;
+        d3.json("./gps.geojson", function (d) {
+            gpPractices = d;
+            getSpoke(gpPractices);
+        });
+
+        map.on('moveend', () => {
+            if (gpPractices) getSpoke(gpPractices);
+        });
+
+        function getSpoke(practices) {
+            const center = map.getCenter();
+            const newPoint = turf.point([center.lng, center.lat]);
+            buildSpoke(practices, newPoint);
+        }
+
+        function buildSpoke(practices, point) {
+            let nearestPractices = turf.featureCollection([]);
+            let practiceLines = turf.featureCollection([]);
+            let cleanedPractices = JSON.parse(JSON.stringify(practices));
+
+            for (let i = 0; i < 10; i++) {
+                const nearest = turf.nearestPoint(point, cleanedPractices);
+
+                const startLng = point.geometry.coordinates[0];
+                const endLng = nearest.geometry.coordinates[0];
+
+                if (startLng >= 90 && endLng <= -90) {
+                    nearest.geometry.coordinates[0] += 360;
+                } else if (startLng <= -90 && endLng >= 90) {
+                    nearest.geometry.coordinates[0] -= 360;
+                }
+
+                const line = turf.lineString([point.geometry.coordinates, nearest.geometry.coordinates]);
+
+                nearestPractices.features.push(nearest);
+                practiceLines.features.push(line);
+
+                const idx = cleanedPractices.features.findIndex(f => f.properties.practiceCode === nearest.properties.practiceCode);
+                if (idx !== -1) cleanedPractices.features.splice(idx, 1);
+            }
+
+            if (initLoad) {
+                addLayers(practices, nearestPractices, practiceLines);
+            } else {
+                updateLayers(nearestPractices, practiceLines);
+            }
+        }
+
+        function addLayers(allPractices, nearest, lines) {
+            initLoad = false;
+
+            gpLayer = L.geoJSON(allPractices, {
+                pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+                    radius: 3,
+                    color: '#a7a79b'
+                })
+            }).addTo(map);
+
+            nearestLayer = L.geoJSON(nearest, {
+                pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+                    radius: 5,
+                    color: '#035690'
+                })
+            }).addTo(map);
+
+            routeLayer = L.geoJSON(lines, {
+                style: {
+                    color: '#FAB622',
+                    weight: 2
+                }
+            }).addTo(map);
+        }
+
+        function updateLayers(nearest, lines) {
+            if (nearestLayer) map.removeLayer(nearestLayer);
+            if (routeLayer) map.removeLayer(routeLayer);
+
+            nearestLayer = L.geoJSON(nearest, {
+                pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+                    radius: 5,
+                    color: '#035690'
+                })
+            }).addTo(map);
+
+            routeLayer = L.geoJSON(lines, {
+                style: {
+                    color: '#FAB622',
+                    weight: 2
+                }
+            }).addTo(map);
+        }
+    </script>
+</body>
+
+</html>

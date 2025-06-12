@@ -1,0 +1,3 @@
+# GP spidermap
+
+This map is borrowed from @alasdairrae [steakbakespider](https://github.com/alasdairrae/alasdairrae.github.io/tree/master/steakbakespider). I used chatgpt to switch out mapbox for leaflet, and used a mixture of the [NHS ODS](https://digital.nhs.uk/services/organisation-data-service/data-search-and-export/csv-downloads/gp-and-gp-practice-related-data) data for GP practices, and the [ONS geoportal](https://geoportal.statistics.gov.uk/search?q=CTD_NHSPD&sort=Date%20Created%7Ccreated%7Cdesc) to convert postcodes to geospatial data.
