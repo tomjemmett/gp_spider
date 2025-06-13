@@ -26,8 +26,13 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="SmoothWheelZoom.js"></script>
     <script>
-        let map = L.map('map').setView([51.9873136, -1.7134329], 8);
+        let map = L.map('map', {
+            scrollWheelZoom: false, // disable original zoom function
+            smoothWheelZoom: true,  // enable smooth zoom 
+            smoothSensitivity: 1,   // zoom speed. default is 1
+        }).setView([51.9873136, -1.7134329], 8);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 14,
